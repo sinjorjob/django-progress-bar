@@ -1,0 +1,62 @@
+{% extends '.\base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<form class="mx-5 mt-3" action="" method="post" id="upload_form">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <input type="submit" value="アップロード" class="btn btn-primary mt-3">
+</form>
+<div class="container my-5">
+    <div class="progress mb-3 not-visible" id="progress">
+    </div>
+</div>
+
+<script>
+    const uploadForm = document.getElementById('upload_form');
+    const input_file = document.getElementById('id_image');
+    const progress_bar = document.getElementById('progress');
+    $("#upload_form").submit(function (e) {
+        e.preventDefault();//画面のリフレッシュを防止
+        var formData = new FormData(this);    // upload_formフォームを取得。
+        const media_data = input_file.files[0];
+        if (media_data != null) {
+            progress_bar.classList.remove("not-visible");   //進捗バーを可視化
+        }
+        $.ajax({
+            type: 'POST',
+            url: '/',
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            processData: false,
+            xhr: function () {
+                const xhr = new window.XMLHttpRequest();   // XMLHttpRequest オブジェクトを作成し初期化
+                xhr.upload.addEventListener('progress', e => {
+                    if (e.lengthComputable) {  //ProgressEventに関係するリソースの長さが計算可能かどうかを判定。
+                        
+                        //uploadフィアルのloadedとtotalサイズを見て進捗率を計算
+                        const percentProgress = Math.ceil((e.loaded / e.total) * 100);
+                        console.log(percentProgress); 
+                        progress_bar.innerHTML = `<div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                        role="progressbar" style="width: ${percentProgress}%" aria-valuenow="${percentProgress}" aria-valuemin="0" 
+                        aria-valuemax="100">${percentProgress}%</div>`
+                    }
+                });
+                return xhr
+            },
+        }).then(
+            function (data, status, xhr) {
+                // 通信成功時の処理
+                alert(data['data']);
+                uploadForm.reset()
+                progress_bar.classList.add('not-visible')
+            },
+            function (xhr, status, error) {
+                // 通信失敗時の処理
+                console.log(error);
+            }
+        );
+    });
+</script>
+{% endblock %}
